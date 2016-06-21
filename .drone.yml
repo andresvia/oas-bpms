@@ -1,0 +1,35 @@
+publish:
+  docker:
+    environment:
+      HTTP_PROXY: "http://10.20.4.15:3128"
+      NO_PROXY: "192.168.12.212"
+    registry: 192.168.12.212:5000
+    repo: negocio/bpms
+    tag:
+      - latest
+      - $$BRANCH-$${COMMIT:0:7}-$$BUILD_NUMBER
+    file: Dockerfile
+    insecure: true
+    load: docker/image.tar
+    save:
+      destination: docker/image.tar
+      tag: latest
+    storage_driver: overlay
+
+cache:
+  mount:
+    - docker/image.tar
+
+notify:
+  webhook:
+    environment:
+      HTTP_PROXY: "http://10.20.4.15:3128"
+    urls:
+      - "https://api.telegram.org/bot$$TELEGRAM_BOT_KEY/sendMessage"
+    content_type: application/json
+    template: >
+      {
+        "chat_id": "-129350403",
+        "parse_mode": "Markdown",
+        "text": "[{{uppercase build.status}}]({{build.link_url}}) {{repo.full_name}}:{{build.branch}}-{{truncate build.commit 7}}-{{build.number}} {{build.author}} authored \"{{truncate build.message 25}}\"... took {{duration build.started_at build.finished_at}}"
+      }
